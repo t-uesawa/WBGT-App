@@ -4,14 +4,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [react(), VitePWA({
     manifest: {
+      id: '/WBGT-App/',
       // ユーザーに通常表示されるアプリ名
-      name: 'Todo App (PWA)',
+      name: 'WBGT App',
       // name を表示するのに十分なスペースがない場合に表示されるアプリ名
-      short_name: 'Todo',
+      short_name: 'WBGT',
       // アプリの詳細な説明
-      description: 'Todo プログレッシブ・ウェブアプリ',
+      description: 'WBGT(暑さ指数計測記録アプリ)',
       /**
        * アプリの開始 URL:
        * 通常はサーブするディレクトリそのもの
