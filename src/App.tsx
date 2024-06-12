@@ -33,7 +33,7 @@ const App: React.FC = () => {
 		<Box ref={ref}>
 			<CssBaseline />
 			<Box sx={{ p: 1 }}>
-				<h1>Demo App</h1>
+				<h1>Demo Demo App</h1>
 				<FullCalendar
 					// カレンダー
 					plugins={[dayGridPlugin, interactionPlugin]}
