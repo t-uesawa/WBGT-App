@@ -5,6 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
+  build: {
+    outDir: 'dist',
+  },
   plugins: [react(), VitePWA({
     // 自動更新タイプを設定 (autoUpdate, promptなど)
     registerType: 'autoUpdate',
