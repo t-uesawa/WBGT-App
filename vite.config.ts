@@ -6,6 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   base: './',
   plugins: [react(), VitePWA({
+    // 自動更新タイプを設定 (autoUpdate, promptなど)
+    registerType: 'autoUpdate',
+
+    // PWAのマニフェスト設定
     manifest: {
       id: '/WBGT-App/',
       // ユーザーに通常表示されるアプリ名
@@ -62,5 +66,52 @@ export default defineConfig({
         },
       ],
     },
+
+    // Workboxによるキャッシュ戦略の設定
+    workbox: {
+      // ランタイムキャッシングの設定
+      runtimeCaching: [
+        {
+          // キャッシュ対象のURLパターン (同じオリジンのリソース)
+          urlPattern: ({ url }) => url.origin === self.location.origin,
+          // キャッシュ戦略 (CacheFirst: まずキャッシュを確認)
+          handler: 'CacheFirst',
+          options: {
+            // キャッシュ名
+            cacheName: 'static-resources',
+            // キャッシュの有効期限設定
+            expiration: {
+              // 最大エントリー数
+              maxEntries: 50,
+              // キャッシュの有効期間 (30日)
+              maxAgeSeconds: 30 * 24 * 60 * 60,
+            },
+          },
+        },
+        {
+          // キャッシュ対象のURLパターン (異なるオリジンのリソース)
+          urlPattern: ({ url }) => url.origin !== self.location.origin,
+          // キャッシュ戦略 (NetworkFirst: まずネットワークを確認)
+          handler: 'NetworkFirst',
+          options: {
+            // キャッシュ名
+            cacheName: 'external-resources',
+            // ネットワークタイムアウト時間 (秒)
+            networkTimeoutSeconds: 10,
+            // キャッシュの有効期限設定
+            expiration: {
+              // 最大エントリー数
+              maxEntries: 50,
+              // キャッシュの有効期間 (7日)
+              maxAgeSeconds: 7 * 24 * 60 * 60,
+            },
+            // キャッシュ可能なレスポンスのステータスコード
+            cacheableResponse: {
+              statuses: [0, 200],
+            },
+          },
+        },
+      ],
+    }
   })],
 });
