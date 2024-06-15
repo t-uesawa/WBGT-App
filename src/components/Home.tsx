@@ -14,6 +14,7 @@ type Props = {
 	drawerOpen: boolean;
 	onDataList: (e: Array<{ id: string; kouji_name: string; wbgt: number; }>) => void;
 	onDrawerOpen: () => void;
+	fetchDate: () => void;
 };
 
 export const Home = (props: Props) => {
@@ -127,9 +128,9 @@ export const Home = (props: Props) => {
 			// Firebase送信
 			try {
 				// 新しいドキュメントを'data'コレクションに追加
-				console.log(db);
+				const formattedDate = selectedDate ? selectedDate.format('YYYY-MM-DD') : null;
 				const docRef = await addDoc(collection(db, 'data'), {
-					date: selectedDate,
+					date: formattedDate,
 					kouji_name: selectedKouji['label'],
 					wbgt: WBGTVal,
 					timestamp: Date.now(), // 現在のタイムスタンプを追加
@@ -138,6 +139,8 @@ export const Home = (props: Props) => {
 				// (''); // 入力フィールドをクリア
 				// 新しいデータをデータリストに追加
 				props.onDataList([...props.dataList, { id: docRef.id, kouji_name: selectedKouji['label'], wbgt: Number(WBGTVal) }]);
+				// 再レタリング
+				props.fetchDate();
 			} catch (e) {
 				console.error('Error adding document: ', e); // エラーメッセージをコンソールに表示
 			}

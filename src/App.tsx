@@ -17,7 +17,7 @@ const App: React.FC = () => {
 	// Firestoreから取得したデータリストを保持するためのstate
 	const [dataList, setDataList] = useState<Array<{ id: string; kouji_name: string; wbgt: number; }>>([]);
 	// イベントカレンダー
-	const [eventList, setEventList] = useState<Array<{ text: string; date: string; }>>([]);
+	const [eventList, setEventList] = useState<Array<{ title: string; date: string; }>>([]);
 
 	const ref = React.useRef<HTMLDivElement>(null);
 
@@ -34,29 +34,30 @@ const App: React.FC = () => {
 		setDataList(items);
 	};
 
+	// Firebase取得関数
+	const fetchData = async () => {
+		try {
+			// コレクションからドキュメント取得
+			const querySnapshot = await getDocs(collection(db, 'data'));
+			// 汎用的なデータ
+			const items: Array<{ id: string; kouji_name: string; wbgt: number; }> = [];	// 初期化
+			querySnapshot.forEach(doc => {
+				items.push({ id: doc.id, kouji_name: doc.data().kouji_name, wbgt: doc.data().wbgt });
+			});
+			setDataList(items);	// データリスト更新
+			// イベントカレンダー
+			const eventItems: Array<{ title: string; date: string; }> = [];	// 初期化
+			querySnapshot.forEach(doc => {
+				eventItems.push({ title: doc.data().kouji_name, date: doc.data().date });
+			});
+			setEventList(eventItems);	// データリスト更新
+		} catch (err) {
+			console.error("Error fetching data: ", err);
+		}
+	};
+
 	// コンポーネントマウント時にFirebaseからデータ取得
 	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				// コレクションからドキュメント取得
-				const querySnapshot = await getDocs(collection(db, 'data'));
-				// 取得したドキュメントをstateにセット
-				// 汎用的なデータ
-				const items: Array<{ id: string; kouji_name: string; wbgt: number; }> = [];	// 初期化
-				querySnapshot.forEach(doc => {
-					items.push({ id: doc.id, kouji_name: doc.data().kouji_name, wbgt: doc.data().wbgt });
-				});
-				setDataList(items);	// データリスト更新
-				// イベントカレンダー
-				const eventItems: Array<{ text: string; date: string; }> = [];	// 初期化
-				querySnapshot.forEach(doc => {
-					eventItems.push({ text: doc.data().kouji_name, date: doc.data().date });
-				});
-				setEventList(eventItems);	// データリスト更新
-			} catch (err) {
-				console.error("Error fetching data: ", err);
-			}
-		};
 		fetchData();	// データ取得関数を実行
 	}, []);	// 初回マウント時のみ実行
 
@@ -83,7 +84,7 @@ const App: React.FC = () => {
 					eventClick={(e) => console.log(e)}
 				/>
 			</Box>
-			<Home dataList={dataList} drawerOpen={drawerOpen} dateStr={dateStr} onDataList={handleDataList} onDrawerOpen={handleDrawerOpen} />
+			<Home dataList={dataList} drawerOpen={drawerOpen} dateStr={dateStr} onDataList={handleDataList} onDrawerOpen={handleDrawerOpen} fetchDate={fetchData} />
 		</ Box>
 	)
 }
