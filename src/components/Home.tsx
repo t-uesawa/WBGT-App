@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Autocomplete, Box, Button, CssBaseline, Grid, Icon, IconButton, Slider, SwipeableDrawer, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, CssBaseline, FormControl, Grid, Icon, IconButton, InputLabel, MenuItem, Select, Slider, TextField, Typography } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from 'dayjs';
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import 'dayjs/locale/ja';
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 type Props = {
-	dataList: Array<{ id: string; kouji_name: string; wbgt: number; }>;
+	dataList: Array<Firebase>;
+	filterDataList: Array<Firebase>;
 	dateStr: string | null;
 	drawerOpen: boolean;
-	onDataList: (e: Array<{ id: string; kouji_name: string; wbgt: number; }>) => void;
+	onDataList: (e: Array<Firebase>) => void;
 	onDrawerOpen: () => void;
 	fetchDate: () => void;
 };
@@ -20,6 +23,7 @@ type Props = {
 export const Home = (props: Props) => {
 	const [selectedKouji, setSelectedKouji] = useState<{ label: string; id: number } | null>(null);
 	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
+	const [selectedTime, setSelectedTime] = useState<string>(getClosestTime());
 	const [temperatureVal, setTemperatureVal] = useState<string | number>(15);
 	const [temperatureError, setTemperatureError] = useState<string | null>(null);
 	const [humidityVal, setHumidityVal] = useState<string | number>(0);
@@ -48,9 +52,16 @@ export const Home = (props: Props) => {
 		{ value: 100, label: '100%' }
 	];
 
+	dayjs.extend(utc);
+	dayjs.extend(timezone);
+
 	const handleDateChange = (date: Dayjs | null) => {
 		setSelectedDate(date);
 	};
+
+	const handleTimeChange = (time: string) => {
+		setSelectedTime(time);
+	}
 
 	const validateTemperature = (val: string | number) => {
 		const numVal = Number(val);
@@ -138,7 +149,16 @@ export const Home = (props: Props) => {
 				console.log('Document written with ID: ', docRef.id); // 成功メッセージをコンソールに表示
 				// (''); // 入力フィールドをクリア
 				// 新しいデータをデータリストに追加
-				props.onDataList([...props.dataList, { id: docRef.id, kouji_name: selectedKouji['label'], wbgt: Number(WBGTVal) }]);
+				props.onDataList([...props.dataList, {
+					id: docRef.id,
+					recordDate: formattedDate,
+					recordTime: selectedTime,
+					kouji_name: selectedKouji['label'],
+					temperatureVal: Number(temperatureVal),
+					humidityVal: Number(humidityVal),
+					wbgtVal: Number(WBGTVal),
+					creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
+				}]);
 				// 再レタリング
 				props.fetchDate();
 			} catch (e) {
@@ -147,6 +167,35 @@ export const Home = (props: Props) => {
 		}
 	};
 
+	function getClosestTime(): string {
+		// 現在時刻を取得
+		const now: Date = new Date();
+
+		// 指定時刻をDateオブジェクトとして作成
+		const times: Date[] = [
+			new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0),
+			new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0),
+			new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0),
+		];
+
+		// 時刻の差を計算し、最も小さい値を持つ時刻を見つける
+		let closestTime: Date = times[0];
+		let minDiff: number = Math.abs(now.getTime() - times[0].getTime());
+
+		for (let i = 1; i < times.length; i++) {
+			const diff: number = Math.abs(now.getTime() - times[i].getTime());
+			if (diff < minDiff) {
+				minDiff = diff;
+				closestTime = times[i];
+			}
+		}
+
+		// 結果をフォーマットして返す
+		const hours: string = closestTime.getHours().toString().padStart(2, '0');
+		const minutes: string = closestTime.getMinutes().toString().padStart(2, '0');
+		return `${hours}:${minutes}`;
+	}
+
 	useEffect(() => {
 		if (props.dateStr) {
 			setSelectedDate(dayjs(props.dateStr));
@@ -154,12 +203,7 @@ export const Home = (props: Props) => {
 	}, [props.dateStr]);
 
 	return (
-		<SwipeableDrawer
-			anchor='bottom'
-			open={props.drawerOpen}
-			onClose={props.onDrawerOpen}
-			onOpen={props.onDrawerOpen}
-		>
+		<>
 			<Box sx={{
 				display: 'flex',
 				justifyContent: 'space-between',
@@ -174,7 +218,7 @@ export const Home = (props: Props) => {
 					<Icon>highlight_off</Icon>
 				</IconButton>
 				<Typography variant='h6'>新規登録</Typography>
-				<IconButton aria-label="save" onClick={() => handleSubmit()}>
+				<IconButton aria-label="save" onClick={() => handleSubmit}>
 					<Icon>save</Icon>
 				</IconButton>
 			</Box>
@@ -200,7 +244,20 @@ export const Home = (props: Props) => {
 							</LocalizationProvider>
 						</Grid>
 						<Grid item xs={12} md={6}>
-
+							<FormControl fullWidth>
+								<InputLabel id="time-select-label">計測時刻</InputLabel>
+								<Select
+									labelId="time-select-label"
+									id="time-select"
+									value={selectedTime}
+									label="計測時刻"
+									onChange={(e) => handleTimeChange(e['target']['value'])}
+								>
+									<MenuItem value='8:00'>8:00</MenuItem>
+									<MenuItem value='10:00'>10:00</MenuItem>
+									<MenuItem value='13:00'>13:00</MenuItem>
+								</Select>
+							</FormControl>
 						</Grid>
 						<Grid item xs={12} md={6} lg={4}>
 							<TextField
@@ -267,7 +324,7 @@ export const Home = (props: Props) => {
 					</Grid>
 				</Box>
 			</Box>
-		</SwipeableDrawer>
+		</>
 	);
 };
 
