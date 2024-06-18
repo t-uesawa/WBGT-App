@@ -163,6 +163,10 @@ export const Edit = (props: Props) => {
 					wbgtVal: Number(WBGTVal),
 					creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
 				}]);
+
+				// ドロワー閉じる
+				props.onPageTransition('detail');
+				props.onDrawerOpen();
 				// 再レタリング
 				props.fetchDate();
 			} catch (e) {

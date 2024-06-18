@@ -48,7 +48,7 @@ export const Detail = ({ filterDataList, selectedDate, onDrawerOpen, onPageTrans
 									<Badge badgeContent={data['records'].length} color="success">
 										<Icon>storage</Icon>
 									</Badge>
-									<Typography sx={{ width: '33%', flexShrink: 0 }}>{data['kouji_name']}</Typography>
+									<Typography sx={{ width: '33%', flexShrink: 0, textAlign: 'center' }}>{data['kouji_name']}</Typography>
 								</AccordionSummary>
 								<AccordionDetails>
 									<BasicTable records={data['records']}></BasicTable>

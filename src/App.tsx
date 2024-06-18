@@ -23,6 +23,8 @@ const App: React.FC = () => {
 	const [eventList, setEventList] = useState<Array<CalendarEvent>>([]);
 	// detail data
 	const [detailList, setDetailList] = useState<Array<DetailData>>([]);
+	// データの読み込み状態
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
 	const ref = React.useRef<HTMLDivElement>(null);
 
@@ -103,7 +105,6 @@ const App: React.FC = () => {
 			handleDataList(items);	// データリスト更新
 			// イベントカレンダー
 			const eventItems: Array<CalendarEvent> = [];	// 初期化
-
 			const uniqueItems: Set<string> = new Set();
 			querySnapshot.forEach(doc => {
 				const uniqueKey = `${doc.data().kouji_name}-${doc.data().recordDate}`;
@@ -113,10 +114,43 @@ const App: React.FC = () => {
 				}
 			});
 			setEventList(eventItems);	// データリスト更新
+			// 初回データ取得後、選択された日付でdetailListを更新
+			setDetailList(transformData(items, selectedDate));
+			setIsLoading(false); // データ取得完了
 		} catch (err) {
 			console.error("Error fetching data: ", err);
+			setIsLoading(false); // データ取得エラー
 		}
 	};
+
+	// 初回データ取得後、選択された日付でdetailListを更新する関数
+	const transformData = (data: Firebase[], date: string): DetailData[] => {
+		const map = new Map<string, DetailData>();
+
+		data.forEach(item => {
+			const key = `${item.kouji_name}-${item.recordDate}`;
+
+			if (date === item.recordDate) {
+				if (!map.has(key)) {
+					map.set(key, {
+						key,
+						kouji_name: item.kouji_name,
+						recordDate: item.recordDate,
+						records: []
+					});
+				}
+				map.get(key)!.records.push({
+					id: item.id,
+					recordTime: item.recordTime,
+					temperatureVal: item.temperatureVal,
+					humidityVal: item.humidityVal,
+					wbgtVal: item.wbgtVal,
+					creationTime: item.creationTime
+				});
+			}
+		});
+		return Array.from(map.values());
+	}
 
 	// コンポーネントマウント時にFirebaseからデータ取得
 	useEffect(() => {
@@ -127,10 +161,10 @@ const App: React.FC = () => {
 		<>
 			<Box ref={ref}>
 				<CssBaseline />
+				<Typography p={3} variant='h4' fontWeight='bold'>暑さ指数計測記録表</Typography>
 				<Grid container>
 					<Grid item xs={12} md={8}>
 						<Box sx={{ p: 1 }}>
-							<Typography variant='h4' fontWeight='bold'>暑さ指数計測記録表</Typography>
 							<FullCalendar
 								// カレンダー
 								plugins={[dayGridPlugin, interactionPlugin]}
@@ -152,7 +186,7 @@ const App: React.FC = () => {
 					</Grid>
 					{isMdUp ? (
 						<Grid item xs={4}>
-							{currentComponent === 'detail' &&
+							{!isLoading && currentComponent === 'detail' &&
 								<Detail
 									filterDataList={detailList}
 									selectedDate={selectedDate}
@@ -160,7 +194,7 @@ const App: React.FC = () => {
 									onPageTransition={handlePageTransition}
 								/>
 							}
-							{currentComponent === 'edit' &&
+							{!isLoading && currentComponent === 'edit' &&
 								<Edit
 									dataList={dataList}
 									filterDataList={detailList}
@@ -180,7 +214,7 @@ const App: React.FC = () => {
 							onClose={toggleDrawer}
 							onOpen={toggleDrawer}
 						>
-							{currentComponent === 'detail' &&
+							{!isLoading && currentComponent === 'detail' &&
 								<Detail
 									filterDataList={detailList}
 									selectedDate={selectedDate}
@@ -188,7 +222,7 @@ const App: React.FC = () => {
 									onPageTransition={handlePageTransition}
 								/>
 							}
-							{currentComponent === 'edit' &&
+							{!isLoading && currentComponent === 'edit' &&
 								<Edit
 									dataList={dataList}
 									filterDataList={detailList}
