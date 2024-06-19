@@ -2,14 +2,16 @@ import { Accordion, AccordionDetails, AccordionSummary, Badge, Box, CssBaseline,
 import BasicTable from "./Table";
 
 type Props = {
+	isMdUp: boolean;
 	filterDataList: Array<DetailData>;
 	selectedDate: string;
 	onDrawerOpen: () => void;
 	onPageTransition: (page: string) => void;
 }
 
-export const Detail = ({ filterDataList, selectedDate, onDrawerOpen, onPageTransition }: Props) => {
+export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onPageTransition }: Props) => {
 	console.log(filterDataList);
+	console.log(isMdUp)
 	return (
 		<>
 			<Box sx={{
@@ -22,11 +24,13 @@ export const Detail = ({ filterDataList, selectedDate, onDrawerOpen, onPageTrans
 				bgcolor: 'background.paper',
 			}}>
 				<CssBaseline />
-				<Tooltip title='閉じる'>
-					<IconButton aria-label='close' onClick={() => onDrawerOpen()}>
-						<Icon>highlight_off</Icon>
-					</IconButton>
-				</Tooltip>
+				{!isMdUp &&
+					<Tooltip title='閉じる'>
+						<IconButton aria-label='close' onClick={() => onDrawerOpen()}>
+							<Icon>highlight_off</Icon>
+						</IconButton>
+					</Tooltip>
+				}
 				<Typography variant='h6'>{selectedDate}</Typography>
 				<Tooltip title='新規作成'>
 					<IconButton aria-label='add' onClick={() => onPageTransition('edit')}>
@@ -35,10 +39,10 @@ export const Detail = ({ filterDataList, selectedDate, onDrawerOpen, onPageTrans
 				</Tooltip>
 			</Box>
 			<Box sx={{ p: 4 }}>
-				{filterDataList.length === 0 && <Typography variant="body2">データがありません</Typography>}
+				{filterDataList.length === 0 && <Typography variant="body2" align='center'>データがありません</Typography>}
 				{filterDataList.length !== 0 &&
 					filterDataList.map(data => (
-						<div>
+						<div key={data['key']}>
 							<Accordion>
 								<AccordionSummary
 									expandIcon={<Icon>expand_more</Icon>}

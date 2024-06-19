@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid'
 import allLocales from '@fullcalendar/core/locales-all.js';
 import interactionPlugin from "@fullcalendar/interaction";
-import { Box, CssBaseline, Grid, SwipeableDrawer, Typography, useMediaQuery, useTheme, } from "@mui/material";
+import { Box, CssBaseline, Grid, Icon, Paper, SwipeableDrawer, Typography, useMediaQuery, useTheme, } from "@mui/material";
 import dayjs from 'dayjs';
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./firebaseConfig";
@@ -161,51 +161,59 @@ const App: React.FC = () => {
 		<>
 			<Box ref={ref}>
 				<CssBaseline />
-				<Typography p={3} variant='h4' fontWeight='bold'>暑さ指数計測記録表</Typography>
-				<Grid container>
+				<Box p={3} sx={{ display: 'flex' }}>
+					<Icon fontSize='large' sx={{ color: '#FF0000' }}>thermostat</Icon>
+					<Typography variant='h4' fontWeight='bold'>WBGT</Typography>
+				</Box>
+				<Grid container spacing={2}>
 					<Grid item xs={12} md={8}>
-						<Box sx={{ p: 1 }}>
-							<FullCalendar
-								// カレンダー
-								plugins={[dayGridPlugin, interactionPlugin]}
-								initialView='dayGridMonth'
-								headerToolbar={{
-									start: 'prev', center: 'title', end: 'today next'
-								}}
-								height={'auto'}
-								businessHours={true}
-								// 日本語
-								locales={allLocales}
-								locale="ja"
-								events={eventList}
-								dayCellContent={(e) => e.dayNumberText = e.dayNumberText.replace('日', '')}
-								dateClick={(e) => handleCalendarClick(e.dateStr)}
-								eventClick={(e) => handleCalendarClick(dayjs(e.event.start).format('YYYY-MM-DD'))}
-							/>
-						</Box>
+						<Paper elevation={6}>
+							<Box sx={{ p: 1 }}>
+								<FullCalendar
+									// カレンダー
+									plugins={[dayGridPlugin, interactionPlugin]}
+									initialView='dayGridMonth'
+									headerToolbar={{
+										start: 'prev', center: 'title', end: 'today next'
+									}}
+									height={'auto'}
+									businessHours={true}
+									// 日本語
+									locales={allLocales}
+									locale="ja"
+									events={eventList}
+									dayCellContent={(e) => e.dayNumberText = e.dayNumberText.replace('日', '')}
+									dateClick={(e) => handleCalendarClick(e.dateStr)}
+									eventClick={(e) => handleCalendarClick(dayjs(e.event.start).format('YYYY-MM-DD'))}
+								/>
+							</Box>
+						</Paper>
 					</Grid>
 					{isMdUp ? (
 						<Grid item xs={4}>
-							{!isLoading && currentComponent === 'detail' &&
-								<Detail
-									filterDataList={detailList}
-									selectedDate={selectedDate}
-									onDrawerOpen={toggleDrawer}
-									onPageTransition={handlePageTransition}
-								/>
-							}
-							{!isLoading && currentComponent === 'edit' &&
-								<Edit
-									dataList={dataList}
-									filterDataList={detailList}
-									drawerOpen={drawerOpen}
-									dateStr={selectedDate}
-									onDataList={handleDataList}
-									onDrawerOpen={toggleDrawer}
-									onPageTransition={handlePageTransition}
-									fetchDate={fetchData}
-								/>
-							}
+							<Paper elevation={6}>
+								{!isLoading && currentComponent === 'detail' &&
+									<Detail
+										isMdUp={isMdUp}
+										filterDataList={detailList}
+										selectedDate={selectedDate}
+										onDrawerOpen={toggleDrawer}
+										onPageTransition={handlePageTransition}
+									/>
+								}
+								{!isLoading && currentComponent === 'edit' &&
+									<Edit
+										dataList={dataList}
+										filterDataList={detailList}
+										drawerOpen={drawerOpen}
+										dateStr={selectedDate}
+										onDataList={handleDataList}
+										onDrawerOpen={toggleDrawer}
+										onPageTransition={handlePageTransition}
+										fetchDate={fetchData}
+									/>
+								}
+							</Paper>
 						</Grid>
 					) : (
 						<SwipeableDrawer
@@ -216,6 +224,7 @@ const App: React.FC = () => {
 						>
 							{!isLoading && currentComponent === 'detail' &&
 								<Detail
+									isMdUp={isMdUp}
 									filterDataList={detailList}
 									selectedDate={selectedDate}
 									onDrawerOpen={toggleDrawer}
@@ -237,7 +246,7 @@ const App: React.FC = () => {
 						</SwipeableDrawer>
 					)}
 				</Grid>
-			</ Box>
+			</ Box >
 		</>
 	)
 }

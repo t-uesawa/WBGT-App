@@ -10,6 +10,26 @@ type Props = {
 	records: Array<DetailRecord>
 };
 
+const editFontColor = (num: number): string => {
+	if (num >= 15 && num <= 20) {
+		return '#003285';
+	} else if (num >= 21 && num <= 24) {
+		return '#2A629A';
+	} else if (num >= 25 && num <= 27) {
+		return '#FFDA78';
+	} else if (num >= 28 && num <= 30) {
+		return '#FF7F3E';
+	} else if (num >= 31 && num <= 44) {
+		return '#FF0000';
+	} else {
+		return '#1A2130';
+	}
+}
+
+const handleRowClick = () => {
+
+}
+
 export default function BasicTable({ records }: Props) {
 	return (
 		<TableContainer component={Paper}>
@@ -26,12 +46,13 @@ export default function BasicTable({ records }: Props) {
 					{records.map(record => (
 						<TableRow
 							key={record.id}
-						// sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+							onClick={() => handleRowClick()}
+							sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}
 						>
 							<TableCell align='center' component="th" scope="row">
 								{record.recordTime}
 							</TableCell>
-							<TableCell align="right">{record.wbgtVal}</TableCell>
+							<TableCell align="right" sx={{ color: editFontColor(record.wbgtVal) }}>{record.wbgtVal}</TableCell>
 							<TableCell align="right">{record.temperatureVal}</TableCell>
 							<TableCell align="right">{record.humidityVal}</TableCell>
 						</TableRow>
