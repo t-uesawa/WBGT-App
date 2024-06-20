@@ -7,11 +7,10 @@ type Props = {
 	selectedDate: string;
 	onDrawerOpen: () => void;
 	onPageTransition: (page: string) => void;
+	onRowClick: (id: string) => void;
 }
 
-export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onPageTransition }: Props) => {
-	console.log(filterDataList);
-	console.log(isMdUp)
+export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onPageTransition, onRowClick }: Props) => {
 	return (
 		<>
 			<Box sx={{
@@ -24,12 +23,14 @@ export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onP
 				bgcolor: 'background.paper',
 			}}>
 				<CssBaseline />
-				{!isMdUp &&
+				{!isMdUp ?
 					<Tooltip title='閉じる'>
 						<IconButton aria-label='close' onClick={() => onDrawerOpen()}>
 							<Icon>highlight_off</Icon>
 						</IconButton>
 					</Tooltip>
+					:
+					<Box />
 				}
 				<Typography variant='h6'>{selectedDate}</Typography>
 				<Tooltip title='新規作成'>
@@ -52,10 +53,10 @@ export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onP
 									<Badge badgeContent={data['records'].length} color="success">
 										<Icon>storage</Icon>
 									</Badge>
-									<Typography sx={{ width: '33%', flexShrink: 0, textAlign: 'center' }}>{data['kouji_name']}</Typography>
+									<Typography sx={{ width: '33%', flexShrink: 0, textAlign: 'center' }}>{data['kouji']['label']}</Typography>
 								</AccordionSummary>
 								<AccordionDetails>
-									<BasicTable records={data['records']}></BasicTable>
+									<BasicTable records={data['records']} onRowClick={onRowClick}></BasicTable>
 								</AccordionDetails>
 							</Accordion>
 						</div>

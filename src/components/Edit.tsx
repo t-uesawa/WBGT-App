@@ -7,35 +7,37 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import 'dayjs/locale/ja';
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { wbgtPostFirebase, wbgtPutFirebase } from './firebase';
 
 type Props = {
-	dataList: Array<Firebase>;
+	koujiList: Array<{ label: string, id: string }>;
 	filterDataList: Array<DetailData>;
 	dateStr: string | null;
 	drawerOpen: boolean;
+	selectedRecordId: string | null;
 	onDataList: (e: Array<Firebase>) => void;
 	onDrawerOpen: () => void;
 	onPageTransition: (page: string) => void;
-	fetchDate: () => void;
 };
 
 export const Edit = (props: Props) => {
-	const [selectedKouji, setSelectedKouji] = useState<{ label: string; id: number } | null>(null);
-	const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
-	const [selectedTime, setSelectedTime] = useState<string>(getClosestTime());
-	const [temperatureVal, setTemperatureVal] = useState<string | number>(15);
-	const [temperatureError, setTemperatureError] = useState<string | null>(null);
-	const [humidityVal, setHumidityVal] = useState<string | number>(0);
-	const [humidityError, setHumidityError] = useState<string | null>(null);
-	const [WBGTVal, setWBGTVal] = useState<string | number>(15);
-	const [WBGTError, setWBGTError] = useState<string | null>(null);
+	// レコードIDを取得したとき編集画面を描写する
+	const screenResult = typeof props.selectedRecordId === 'string';
+	const editData = screenResult ?
+		props.filterDataList.map(item => ({
+			...item,
+			records: item['records'].filter(record => record['id'] === props.selectedRecordId)
+		})).filter(item => item['records'].length > 0)[0] : null;
 
-	const koujiOptions = [
-		{ label: 'A工事', id: 1 },
-		{ label: 'B工事', id: 2 }
-	];
+	const [selectedKouji, setSelectedKouji] = useState<{ label: string; id: string } | null>(null);
+	const [selectedDate, setSelectedDate] = useState<Dayjs>(editData ? dayjs(editData['recordDate']) : dayjs());
+	const [selectedTime, setSelectedTime] = useState<string>(editData ? editData['records'][0]['recordTime'] : getClosestTime());
+	const [temperatureVal, setTemperatureVal] = useState<string | number>(editData ? editData['records'][0]['temperatureVal'] : 15);
+	const [temperatureError, setTemperatureError] = useState<string | null>(null);
+	const [humidityVal, setHumidityVal] = useState<string | number>(editData ? editData['records'][0]['humidityVal'] : 0);
+	const [humidityError, setHumidityError] = useState<string | null>(null);
+	const [wbgtVal, setWbgtVal] = useState<string | number>(editData ? editData['records'][0]['wbgtVal'] : 15);
+	const [wbgtError, setWbgtError] = useState<string | null>(null);
 
 	const temperatureMarks = [
 		{ value: 15, label: '15°C' },
@@ -56,21 +58,31 @@ export const Edit = (props: Props) => {
 	dayjs.extend(utc);
 	dayjs.extend(timezone);
 
-	const handleDateChange = (date: Dayjs | null) => {
+	// 計測日
+	const handleDateChange = (date: Dayjs) => {
 		setSelectedDate(date);
 	};
-
+	// 計測時刻
 	const handleTimeChange = (time: string) => {
 		setSelectedTime(time);
 	}
+	// 工事
+	const handleKoujiChange = (e: { label: string, id: string } | null) => {
+		setSelectedKouji(e);
+	}
 
-	const validateTemperature = (val: string | number) => {
-		const numVal = Number(val);
+	// 気温
+	const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setTemperatureVal(e.target.value);
+	};
+	// 気温入力チェック
+	const handleTemperatureCheck = (): boolean => {
+		const numVal = Number(temperatureVal);
 		if (isNaN(numVal)) {
 			setTemperatureError('気温は数値である必要があります');
 			return false;
 		} else if (numVal < 15 || numVal > 44) {
-			setTemperatureError('気温は15℃から44℃の間である必要があります');
+			setTemperatureError('気温は15℃から44℃の間である必要がありまする');
 			return false;
 		} else {
 			setTemperatureError(null);
@@ -78,6 +90,22 @@ export const Edit = (props: Props) => {
 		}
 	};
 
+	const handleHumidityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setHumidityVal(Number(e.target.value));
+	};
+
+	const handleHumidityBlur = () => {
+		validateHumidity(humidityVal);
+	};
+
+	const handleWBGTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setWbgtVal(Number(e.target.value));
+	};
+
+	const handleWBGTBlur = () => {
+		validateWBGT(wbgtVal);
+	};
+	// 湿度入力チェック
 	const validateHumidity = (val: string | number) => {
 		const numVal = Number(val);
 		if (isNaN(numVal)) {
@@ -91,84 +119,55 @@ export const Edit = (props: Props) => {
 			return true;
 		}
 	};
-
+	// WBGT入力チェック
 	const validateWBGT = (val: string | number) => {
 		const numVal = Number(val);
 		if (isNaN(numVal)) {
-			setWBGTError('WBGT値は数値である必要があります');
+			setWbgtError('WBGT値は数値である必要があります');
 			return false;
 		} else if (numVal < 15 || numVal > 44) {
-			setWBGTError('WBGT値は15℃から44℃の間である必要があります');
+			setWbgtError('WBGT値は15℃から44℃の間である必要があります');
 			return false;
 		} else {
-			setWBGTError(null);
+			setWbgtError(null);
 			return true;
 		}
 	};
 
-	const handleTemperatureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setTemperatureVal(Number(e.target.value));
-	};
-
-	const handleTemperatureBlur = () => {
-		validateTemperature(temperatureVal);
-	};
-
-	const handleHumidityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setHumidityVal(Number(e.target.value));
-	};
-
-	const handleHumidityBlur = () => {
-		validateHumidity(humidityVal);
-	};
-
-	const handleWBGTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setWBGTVal(Number(e.target.value));
-	};
-
-	const handleWBGTBlur = () => {
-		validateWBGT(WBGTVal);
-	};
-
 	const handleSubmit = async () => {
 		const isKoujiValid = selectedKouji !== null;
-		const isTemperatureValid = validateTemperature(temperatureVal);
+		const isTemperatureValid = handleTemperatureCheck();
 		const isHumidityValid = validateHumidity(humidityVal);
-		const isWBGTValid = validateWBGT(WBGTVal);
+		const isWBGTValid = validateWBGT(wbgtVal);
 		if (isKoujiValid && isTemperatureValid && isHumidityValid && isWBGTValid) {
 			console.log('Form submitted successfully');
 			// Firebase送信
 			try {
 				// 新しいドキュメントを'data'コレクションに追加
-				const formattedDate = selectedDate ? selectedDate.format('YYYY-MM-DD') : null;
-				const docRef = await addDoc(collection(db, 'calendarEvents'), {
-					recordDate: formattedDate,
-					recordTime: selectedTime,
-					kouji_name: selectedKouji['label'],
-					temperatureVal: Number(temperatureVal),
-					humidityVal: Number(humidityVal),
-					wbgtVal: Number(WBGTVal),
-					creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
-				});
-				console.log('Document written with ID: ', docRef.id); // 成功メッセージをコンソールに表示
-				// (''); // 入力フィールドをクリア
-				// 新しいデータをデータリストに追加
-				props.onDataList([...props.dataList, {
-					id: docRef.id,
-					recordDate: formattedDate,
-					recordTime: selectedTime,
-					kouji_name: selectedKouji['label'],
-					temperatureVal: Number(temperatureVal),
-					humidityVal: Number(humidityVal),
-					wbgtVal: Number(WBGTVal),
-					creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
-				}]);
-
+				if (screenResult && props.selectedRecordId) {
+					// レコードIDを持っている時のみドキュメント更新
+					wbgtPutFirebase(
+						props.selectedRecordId,
+						selectedDate,
+						selectedTime,
+						selectedKouji!,
+						Number(temperatureVal),
+						Number(humidityVal),
+						Number(wbgtVal),
+					);
+				} else {
+					wbgtPostFirebase(
+						selectedDate,
+						selectedTime,
+						selectedKouji!,
+						Number(temperatureVal),
+						Number(humidityVal),
+						Number(wbgtVal),
+					);
+				}
 				// ドロワー閉じる
 				props.onPageTransition('detail');
 				props.onDrawerOpen();
-				// 再レタリング
-				props.fetchDate();
 			} catch (e) {
 				console.error('Error adding document: ', e); // エラーメッセージをコンソールに表示
 			}
@@ -227,7 +226,7 @@ export const Edit = (props: Props) => {
 						<Icon>arrow_back</Icon>
 					</IconButton>
 				</Tooltip>
-				<Typography variant='h6'>新規登録</Typography>
+				<Typography variant='h6'>{screenResult ? '編集' : '新規登録'}</Typography>
 				<Tooltip title='保存'>
 					<IconButton aria-label='save' onClick={() => handleSubmit()}>
 						<Icon>save</Icon>
@@ -238,9 +237,9 @@ export const Edit = (props: Props) => {
 				<Grid container spacing={4} columnSpacing={6} alignItems="center">
 					<Grid item xs={12}>
 						<Autocomplete
-							options={koujiOptions}
+							options={props.koujiList}
 							value={selectedKouji}
-							onChange={(_, newValue) => setSelectedKouji(newValue)}
+							onChange={(_, newValue) => handleKoujiChange(newValue)}
 							isOptionEqualToValue={(option, value) => option.id === value.id}
 							renderInput={(params) => <TextField {...params} label="工事名" />}
 						/>
@@ -248,6 +247,7 @@ export const Edit = (props: Props) => {
 					<Grid item xs={6}>
 						<LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ja">
 							<DatePicker
+								disabled
 								label='計測日'
 								value={selectedDate}
 								onChange={() => handleDateChange}
@@ -273,10 +273,11 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
+							disabled
 							label="気温(℃)"
 							value={temperatureVal}
 							onChange={handleTemperatureChange}
-							onBlur={handleTemperatureBlur}
+							onBlur={handleTemperatureCheck}
 							error={temperatureError !== null}
 							helperText={temperatureError}
 						/>
@@ -293,6 +294,7 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
+							disabled
 							label="湿度(%)"
 							value={humidityVal}
 							onChange={handleHumidityChange}
@@ -313,16 +315,17 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
+							disabled
 							label="WBGT値(℃)"
-							value={WBGTVal}
+							value={wbgtVal}
 							onChange={handleWBGTChange}
 							onBlur={handleWBGTBlur}
-							error={WBGTError !== null}
-							helperText={WBGTError}
+							error={wbgtError !== null}
+							helperText={wbgtError}
 						/>
 						<Slider
-							value={typeof WBGTVal === 'number' ? WBGTVal : Number(WBGTVal)}
-							onChange={(_, val) => setWBGTVal(val as number)}
+							value={typeof wbgtVal === 'number' ? wbgtVal : Number(wbgtVal)}
+							onChange={(_, val) => setWbgtVal(val as number)}
 							aria-labelledby="input-slider"
 							valueLabelDisplay="auto"
 							marks={temperatureMarks}

@@ -1,7 +1,7 @@
 declare type DetailData = {
 	key: string;
-	kouji_name: string;
-	recordDate: string | null;
+	kouji: { label: string, id: string };
+	recordDate: string;
 	records: Array<DetailRecord>
 }
 
