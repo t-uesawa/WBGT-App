@@ -58,7 +58,7 @@ export const wbgtGetFirebase = async (
 			const uniqueKey = `${doc.data().kouji.id}-${doc.data().recordDate}`;
 			if (!uniqueItems.has(uniqueKey)) {
 				uniqueItems.add(uniqueKey);
-				eventItems.push({ title: doc.data().koujiId, date: doc.data().recordDate });
+				eventItems.push({ title: doc.data().kouji.label, date: doc.data().recordDate });
 			}
 		});
 		onEventList(eventItems);	// データリスト更新

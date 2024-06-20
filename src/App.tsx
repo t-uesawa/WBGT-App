@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { Box, CssBaseline, Grid, Icon, Paper, SwipeableDrawer, Typography, useMediaQuery, useTheme, } from '@mui/material';
+import { Box, CssBaseline, Grid, Icon, Paper, SwipeableDrawer, Tooltip, Typography, useMediaQuery, useTheme, } from '@mui/material';
 import Calendar from './components/Calendar';
 import Detail from './components/Detail';
 import Edit from './components/Edit';
@@ -80,6 +80,10 @@ const App: React.FC = () => {
 	const handleIsLoading = (result: boolean) => {
 		setIsLoading(result);
 	}
+	// レコードID更新
+	const handleSelectedRecordId = (id: string | null) => {
+		setSelectedRecordId(id);
+	}
 
 	// カレンダークリック
 	const handleCalendarClick = (date: string) => {
@@ -89,15 +93,17 @@ const App: React.FC = () => {
 		!isMdUp && toggleDrawer();	// (mobile)ドロワーオープン
 	}
 
-	const ref = React.useRef<HTMLDivElement>(null);
-	// 画面サイズ判別
-	const theme = useTheme();
-	const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
 	// Tableコンポーネントで行クリック時の処理
 	const handleRowClick = (id: string) => {
 		setSelectedRecordId(id); // クリックされた行のIDをセット
 		handlePageTransition('edit'); // Editページに遷移
 	};
+
+	const ref = React.useRef<HTMLDivElement>(null);
+	// 画面サイズ判別
+	const theme = useTheme();
+	const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+
 	// コンポーネントマウント時にFirebaseからデータ取得
 	useEffect(() => {
 		// 工事情報取得
@@ -130,10 +136,14 @@ const App: React.FC = () => {
 		<>
 			<Box ref={ref}>
 				<CssBaseline />
-				<Box p={3} sx={{ display: 'flex' }}>
-					<Icon fontSize='large' sx={{ color: '#FF0000' }}>thermostat</Icon>
-					<Typography variant='h4' fontWeight='bold'>WBGT</Typography>
-					<Typography>{isOnline ? 'オンライン' : 'オフライン'}</Typography>
+				<Box p={3} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+					<Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+						<Icon fontSize='large' sx={{ color: '#FF0000' }}>thermostat</Icon>
+						<Typography variant='h4' fontWeight='bold'>WBGT</Typography>
+					</Box>
+					<Tooltip title={isOnline ? 'オンラインで接続中' : 'オフライン'}>
+						<Icon fontSize='large' sx={{ color: isOnline ? 'blue' : 'red' }}>{isOnline ? 'wifi' : 'wifi_off'}</Icon>
+					</Tooltip>
 				</Box>
 				<Grid container spacing={2}>
 					<Grid item xs={12} md={8}>
@@ -157,13 +167,17 @@ const App: React.FC = () => {
 								{!isLoading && currentComponent === 'edit' &&
 									<Edit
 										koujiList={koujiList}
+										dataList={dataList}
 										filterDataList={detailList}
 										drawerOpen={drawerOpen}
 										dateStr={selectedDate}
 										selectedRecordId={selectedRecordId}
 										onDataList={handleDataList}
+										onEventList={handleEventList}
 										onDrawerOpen={toggleDrawer}
 										onPageTransition={handlePageTransition}
+										onIsLoading={handleIsLoading}
+										onSelectedRecordId={handleSelectedRecordId}
 									/>
 								}
 							</Paper>
@@ -188,13 +202,17 @@ const App: React.FC = () => {
 							{!isLoading && currentComponent === 'edit' &&
 								<Edit
 									koujiList={koujiList}
+									dataList={dataList}
 									filterDataList={detailList}
 									drawerOpen={drawerOpen}
 									dateStr={selectedDate}
 									selectedRecordId={selectedRecordId}
 									onDataList={handleDataList}
+									onEventList={handleEventList}
 									onDrawerOpen={toggleDrawer}
 									onPageTransition={handlePageTransition}
+									onIsLoading={handleIsLoading}
+									onSelectedRecordId={handleSelectedRecordId}
 								/>
 							}
 						</SwipeableDrawer>

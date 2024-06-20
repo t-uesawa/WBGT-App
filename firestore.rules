@@ -3,5 +3,8 @@ service cloud.firestore {
     match /calendarEvents/{document=**} {
       allow read, write: if true;
     }
+    match /kouji/{document=**} {
+      allow read, write: if true;
+    }
   }
 }

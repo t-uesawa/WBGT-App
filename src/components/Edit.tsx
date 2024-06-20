@@ -7,17 +7,21 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import 'dayjs/locale/ja';
-import { wbgtPostFirebase, wbgtPutFirebase } from './firebase';
+import { wbgtGetFirebase, wbgtPostFirebase, wbgtPutFirebase } from './firebase';
 
 type Props = {
 	koujiList: Array<{ label: string, id: string }>;
+	dataList: Array<Firebase>;
 	filterDataList: Array<DetailData>;
 	dateStr: string | null;
 	drawerOpen: boolean;
 	selectedRecordId: string | null;
 	onDataList: (e: Array<Firebase>) => void;
+	onEventList: (e: Array<CalendarEvent>) => void;
 	onDrawerOpen: () => void;
 	onPageTransition: (page: string) => void;
+	onIsLoading: (result: boolean) => void;
+	onSelectedRecordId: (id: string | null) => void;
 };
 
 export const Edit = (props: Props) => {
@@ -29,7 +33,7 @@ export const Edit = (props: Props) => {
 			records: item['records'].filter(record => record['id'] === props.selectedRecordId)
 		})).filter(item => item['records'].length > 0)[0] : null;
 
-	const [selectedKouji, setSelectedKouji] = useState<{ label: string; id: string } | null>(null);
+	const [selectedKouji, setSelectedKouji] = useState<{ label: string; id: string } | null>(editData ? editData['kouji'] : null);
 	const [selectedDate, setSelectedDate] = useState<Dayjs>(editData ? dayjs(editData['recordDate']) : dayjs());
 	const [selectedTime, setSelectedTime] = useState<string>(editData ? editData['records'][0]['recordTime'] : getClosestTime());
 	const [temperatureVal, setTemperatureVal] = useState<string | number>(editData ? editData['records'][0]['temperatureVal'] : 15);
@@ -135,41 +139,56 @@ export const Edit = (props: Props) => {
 	};
 
 	const handleSubmit = async () => {
+		// 入力値のチェック
 		const isKoujiValid = selectedKouji !== null;
 		const isTemperatureValid = handleTemperatureCheck();
 		const isHumidityValid = validateHumidity(humidityVal);
 		const isWBGTValid = validateWBGT(wbgtVal);
 		if (isKoujiValid && isTemperatureValid && isHumidityValid && isWBGTValid) {
-			console.log('Form submitted successfully');
-			// Firebase送信
-			try {
-				// 新しいドキュメントを'data'コレクションに追加
-				if (screenResult && props.selectedRecordId) {
-					// レコードIDを持っている時のみドキュメント更新
-					wbgtPutFirebase(
-						props.selectedRecordId,
-						selectedDate,
-						selectedTime,
-						selectedKouji!,
-						Number(temperatureVal),
-						Number(humidityVal),
-						Number(wbgtVal),
-					);
-				} else {
-					wbgtPostFirebase(
-						selectedDate,
-						selectedTime,
-						selectedKouji!,
-						Number(temperatureVal),
-						Number(humidityVal),
-						Number(wbgtVal),
-					);
+			// 重複のチェック
+			const checkedItems = props.dataList.filter(data =>
+				data['kouji']['id'] === selectedKouji['id'] &&
+				data['recordDate'] === dayjs(selectedDate).format('YYYY-MM-DD') &&
+				data['recordTime'] === selectedTime
+			);
+			if (checkedItems.length === 0) {
+				console.log('Form submitted successfully');
+				// Firebase送信
+				try {
+					// 新しいドキュメントを'data'コレクションに追加
+					if (screenResult && props.selectedRecordId) {
+						// レコードIDを持っている時のみドキュメント更新
+						wbgtPutFirebase(
+							props.selectedRecordId,
+							selectedDate,
+							selectedTime,
+							selectedKouji!,
+							Number(temperatureVal),
+							Number(humidityVal),
+							Number(wbgtVal),
+						);
+					} else {
+						wbgtPostFirebase(
+							selectedDate,
+							selectedTime,
+							selectedKouji!,
+							Number(temperatureVal),
+							Number(humidityVal),
+							Number(wbgtVal),
+						);
+					}
+					// ドロワー閉じる
+					props.onPageTransition('detail');
+					props.onDrawerOpen();
+					// レコードIDクリア
+					props.onSelectedRecordId(null);
+					// 再レタリング
+					wbgtGetFirebase(props.onDataList, props.onEventList, props.onIsLoading);
+				} catch (e) {
+					console.error('Error adding document: ', e); // エラーメッセージをコンソールに表示
 				}
-				// ドロワー閉じる
-				props.onPageTransition('detail');
-				props.onDrawerOpen();
-			} catch (e) {
-				console.error('Error adding document: ', e); // エラーメッセージをコンソールに表示
+			} else {
+				console.log('err');
 			}
 		}
 	};
@@ -222,7 +241,10 @@ export const Edit = (props: Props) => {
 			}}>
 				<CssBaseline />
 				<Tooltip title='戻る'>
-					<IconButton aria-label='back' onClick={() => props.onPageTransition('detail')}>
+					<IconButton aria-label='back' onClick={() => {
+						props.onPageTransition('detail');
+						props.onSelectedRecordId(null);
+					}}>
 						<Icon>arrow_back</Icon>
 					</IconButton>
 				</Tooltip>
@@ -273,7 +295,6 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
-							disabled
 							label="気温(℃)"
 							value={temperatureVal}
 							onChange={handleTemperatureChange}
@@ -294,7 +315,6 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
-							disabled
 							label="湿度(%)"
 							value={humidityVal}
 							onChange={handleHumidityChange}
@@ -315,7 +335,6 @@ export const Edit = (props: Props) => {
 					<Grid item xs={12} md={6} lg={4}>
 						<TextField
 							required
-							disabled
 							label="WBGT値(℃)"
 							value={wbgtVal}
 							onChange={handleWBGTChange}
