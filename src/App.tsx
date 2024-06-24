@@ -111,12 +111,16 @@ const App: React.FC = () => {
 			setKoujiList(fetchedKoujiData);
 		};
 
-		// ホットリロード
-		const unsubscribe = setupRealtimeListener(setDataList);
+		let unsubscribe: (() => void) | null = null;
+
+		if (isOnline) {
+			// ホットリロード
+			unsubscribe = setupRealtimeListener(setDataList);
+		}
 
 		loadData();
 
-		return () => unsubscribe();
+		return () => { if (unsubscribe) unsubscribe() };
 	}, [isOnline]);
 
 	// 取得データが変化したとき、FullCalendarイベントを再形成する
@@ -145,6 +149,7 @@ const App: React.FC = () => {
 				// 重複して排除されそうになっているデータのWBGT値が30を超えていて背景色がblueならredに変える
 				if (data.wbgtVal >= 30 && existingEvent && existingEvent.backgroundColor === 'blue') {
 					existingEvent.backgroundColor = 'red';
+					existingEvent.borderColor = 'red';
 				}
 			}
 		});
@@ -277,7 +282,7 @@ const App: React.FC = () => {
 			>
 				<Alert
 					onClose={() => handleSnackClose()}
-					variant="outlined"
+					variant="filled"
 					severity="error"
 					sx={{ width: '100%' }}
 				>
