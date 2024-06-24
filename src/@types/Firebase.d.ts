@@ -1,6 +1,6 @@
 declare type Firebase = {
 	id: string;
-	recordDate: string | null;
+	recordDate: string;
 	recordTime: string;
 	kouji: { label: string, id: string };
 	temperatureVal: number;

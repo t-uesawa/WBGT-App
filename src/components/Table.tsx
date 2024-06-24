@@ -8,7 +8,7 @@ import Paper from '@mui/material/Paper';
 
 type Props = {
 	records: Array<DetailRecord>
-	onRowClick: (id: string) => void;
+	onRowClick: (selectedRecordId: string) => void;
 };
 
 const editFontColor = (num: number): string => {
@@ -28,7 +28,6 @@ const editFontColor = (num: number): string => {
 }
 
 export default function BasicTable({ records, onRowClick }: Props) {
-
 	return (
 		<TableContainer component={Paper}>
 			<Table sx={{ minWidth: 400 }} aria-label="simple table">
