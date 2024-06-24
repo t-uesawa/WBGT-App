@@ -8,9 +8,10 @@ type Props = {
 	onDrawerOpen: () => void;
 	onPageTransition: (page: string) => void;
 	onRowClick: (id: string) => void;
+	onSnackOpen: (msg: string) => void;
 }
 
-export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onPageTransition, onRowClick }: Props) => {
+export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onPageTransition, onRowClick, onSnackOpen }: Props) => {
 	return (
 		<>
 			<Box sx={{
@@ -56,7 +57,7 @@ export const Detail = ({ isMdUp, filterDataList, selectedDate, onDrawerOpen, onP
 									<Typography sx={{ width: '33%', flexShrink: 0, textAlign: 'center' }}>{data['kouji']['label']}</Typography>
 								</AccordionSummary>
 								<AccordionDetails>
-									<BasicTable records={data['records']} onRowClick={onRowClick}></BasicTable>
+									<BasicTable records={data['records']} onRowClick={onRowClick} onSnackOpen={onSnackOpen}></BasicTable>
 								</AccordionDetails>
 							</Accordion>
 						</div>

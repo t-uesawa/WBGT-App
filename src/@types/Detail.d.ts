@@ -12,4 +12,5 @@ declare type DetailRecord = {
 	humidityVal: number;
 	wbgtVal: number;
 	creationTime: string;
+	syncFlag: boolean;
 }

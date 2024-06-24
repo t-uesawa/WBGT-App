@@ -1,14 +1,38 @@
-import { addDoc, collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import localforage from 'localforage';
+
+// ホットリロード対応
+export const setupRealtimeListener = (setDataList: React.Dispatch<React.SetStateAction<Firebase[]>>) => {
+	const unsubscribe = onSnapshot(collection(db, 'calendarEvents'), (snapshot) => {
+		const updatedData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Firebase));
+		setDataList(updatedData);
+		localforage.setItem('calendarEvents', updatedData); // オフライン用に保存
+	});
+	return unsubscribe;
+};
 
 // オンラインであればFirebaseから、オフラインであればlocalForageからデータを取得しFirebase型を返す
 export const fetchData = async (): Promise<Array<Firebase>> => {
 	const isOnline = navigator.onLine;
 
 	if (isOnline) {
-		console.log('GET Firebase');
+		// 取得前にローカル上に未同期データがないかチェックする
+		const localData: Array<Firebase> | null = await localforage.getItem('calendarEvents');
+		if (localData !== null) {
+			// 未同期データを抽出
+			const notSyncData = localData.filter(item => !item['syncFlag']);
+			if (notSyncData.length > 0) {
+				console.log('同期中');
+				// 未同期データあり
+				notSyncData.map(async item => {
+					await addDoc(collection(db, 'calendarEvents'), { ...item, syncFlag: true });
+				});
+				console.log('同期完了');
+			}
+		}
 
+		console.log('GET Firebase');
 		// firebaseからデータ取得(全て)
 		const snapshot = await getDocs(collection(db, 'calendarEvents'));
 		// 取得したデータをFirebase型に変換
@@ -39,9 +63,12 @@ export const addDataRecord = async (newRecord: Firebase) => {
 			const doc = await addDoc(collection(db, 'calendarEvents'), newRecord);
 			// Firebaseに追加されたドキュメントのIDをログ出力
 			console.log('Document written with ID: ', doc.id);
+			// ローカルストレージにもデータを保存
+			records.push({ ...newRecord, syncFlag: true });
+		} else {
+			// オフライン時は未同期フラグをつけてストレージに保存する
+			records.push({ ...newRecord, syncFlag: false });
 		}
-		// ローカルストレージにもデータを保存
-		records.push(newRecord);
 		await localforage.setItem('calendarEvents', records);
 		return records;
 	} catch (err) {

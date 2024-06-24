@@ -207,7 +207,8 @@ export const Edit = ({
 			temperatureVal: Number(temperatureVal),
 			humidityVal: Number(humidityVal),
 			wbgtVal: Number(wbgtVal),
-			creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]')
+			creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
+			syncFlag: true,
 		};
 
 		const updatedData = await updateDataRecord(updatedRecord);
@@ -226,7 +227,8 @@ export const Edit = ({
 			temperatureVal: Number(temperatureVal),
 			humidityVal: Number(humidityVal),
 			wbgtVal: Number(wbgtVal),
-			creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]')
+			creationTime: dayjs().tz('Asia/Tokyo').format('YYYY年M月D日 H:mm:ss [UTC+9]'),
+			syncFlag: true,
 		};
 		const updatedData = await addDataRecord(newRecord);
 		if (updatedData) {

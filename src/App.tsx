@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import { Box, CssBaseline, Grid, Icon, Paper, Snackbar, SwipeableDrawer, Tooltip, Typography, useMediaQuery, useTheme, } from '@mui/material';
+import { Alert, Box, CssBaseline, Grid, Icon, Paper, Snackbar, SwipeableDrawer, Tooltip, Typography, useMediaQuery, useTheme, } from '@mui/material';
 import packageJson from '../package.json';
 import Calendar from './components/Calendar';
 import Detail from './components/Detail';
 import Edit from './components/Edit';
-import { fetchData } from './helpers/eventCalendarHelp';
+import { fetchData, setupRealtimeListener } from './helpers/eventCalendarHelp';
 import { fetchKoujiData } from './helpers/koujiHelp';
 
 // オンライン状態を更新する処理
@@ -110,7 +110,13 @@ const App: React.FC = () => {
 			const fetchedKoujiData = await fetchKoujiData();
 			setKoujiList(fetchedKoujiData);
 		};
+
+		// ホットリロード
+		const unsubscribe = setupRealtimeListener(setDataList);
+
 		loadData();
+
+		return () => unsubscribe();
 	}, [isOnline]);
 
 	// 取得データが変化したとき、FullCalendarイベントを再形成する
@@ -167,7 +173,8 @@ const App: React.FC = () => {
 					temperatureVal: item.temperatureVal,
 					humidityVal: item.humidityVal,
 					wbgtVal: item.wbgtVal,
-					creationTime: item.creationTime
+					creationTime: item.creationTime,
+					syncFlag: item.syncFlag
 				});
 			}
 		});
@@ -204,6 +211,7 @@ const App: React.FC = () => {
 										onDrawerOpen={toggleDrawer}
 										onPageTransition={handlePageTransition}
 										onRowClick={handleRowClick}
+										onSnackOpen={handleSnackOpen}
 									/>
 								}
 								{currentComponent === 'edit' &&
@@ -238,6 +246,7 @@ const App: React.FC = () => {
 									onDrawerOpen={toggleDrawer}
 									onPageTransition={handlePageTransition}
 									onRowClick={handleRowClick}
+									onSnackOpen={handleSnackOpen}
 								/>
 							}
 							{currentComponent === 'edit' &&
@@ -262,15 +271,19 @@ const App: React.FC = () => {
 			</ Box >
 			<Snackbar
 				open={snackOpne}
-				autoHideDuration={6000}
+				autoHideDuration={4000}
 				anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
 				onClose={(_, val) => handleSnackClose(val)}
-				message={
-					<Typography>
-						{snackMessage}
-					</Typography>
-				}
-			/>
+			>
+				<Alert
+					onClose={() => handleSnackClose()}
+					variant="outlined"
+					severity="error"
+					sx={{ width: '100%' }}
+				>
+					{snackMessage}
+				</Alert>
+			</Snackbar>
 		</>
 	)
 }

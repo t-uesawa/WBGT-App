@@ -7,4 +7,5 @@ declare type Firebase = {
 	humidityVal: number;
 	wbgtVal: number;
 	creationTime: string;
+	syncFlag: boolean;
 }

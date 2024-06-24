@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper';
 type Props = {
 	records: Array<DetailRecord>
 	onRowClick: (selectedRecordId: string) => void;
+	onSnackOpen: (msg: string) => void;
 };
 
 const editFontColor = (num: number): string => {
@@ -27,7 +28,7 @@ const editFontColor = (num: number): string => {
 	}
 }
 
-export default function BasicTable({ records, onRowClick }: Props) {
+export default function BasicTable({ records, onRowClick, onSnackOpen }: Props) {
 	return (
 		<TableContainer component={Paper}>
 			<Table sx={{ minWidth: 400 }} aria-label="simple table">
@@ -43,7 +44,11 @@ export default function BasicTable({ records, onRowClick }: Props) {
 					{records.map(record => (
 						<TableRow
 							key={record.id}
-							onClick={() => onRowClick(record.id)}
+							// オフラインかつ同期済みデータは編集不可
+							onClick={() => {
+								!navigator.onLine && record.syncFlag ?
+									onSnackOpen('オフラインモードでは同期済みデータを編集できません') : onRowClick(record.id)
+							}}
 							sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}
 						>
 							<TableCell align='center' component="th" scope="row">
